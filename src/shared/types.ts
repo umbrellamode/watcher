@@ -46,3 +46,9 @@ export interface ClaudeLogEntry {
   session_id?: string
   cwd?: string
 }
+
+export interface PortInfo {
+  port: number
+  pid: number
+  processName: string
+}

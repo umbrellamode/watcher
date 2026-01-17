@@ -154,6 +154,36 @@ body {
   color: var(--color-success);
 }
 
+.badge-muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+}
+
+/* Tab button */
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.tab-btn:hover {
+  color: var(--color-text-secondary);
+}
+
+.tab-btn.active {
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+}
+
 /* Icon button */
 .icon-btn {
   display: flex;
@@ -253,4 +283,46 @@ body {
   color: var(--color-text-muted);
   font-size: 10px;
   flex-shrink: 0;
+}
+
+/* Port card */
+.port-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: transparent;
+  transition: background 0.1s ease;
+}
+
+.port-card:hover {
+  background: var(--color-bg-card);
+}
+
+.port-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-accent);
+  min-width: 48px;
+}
+
+.kill-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  flex-shrink: 0;
+}
+
+.kill-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
 }

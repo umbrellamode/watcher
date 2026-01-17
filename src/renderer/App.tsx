@@ -1,30 +1,42 @@
 import { useEffect } from 'react'
 import { useAppStore } from './store'
-import { Header } from './components/Header'
+import { TabBar } from './components/TabBar'
 import { AgentList } from './components/AgentList'
+import { PortList } from './components/PortList'
 import { Footer } from './components/Footer'
 import { Settings } from './components/Settings'
 
 export default function App() {
-  const { setAgents, setLastSyncedAt, setIsLoading, showSettings, setShowSettings } = useAppStore()
+  const { setAgents, setPorts, setLastSyncedAt, setIsLoading, showSettings, setShowSettings, activeTab } = useAppStore()
 
   useEffect(() => {
     // Initial load
     setIsLoading(true)
-    window.electronAPI.getAgents().then((agents) => {
+    Promise.all([
+      window.electronAPI.getAgents(),
+      window.electronAPI.getPorts(),
+    ]).then(([agents, ports]) => {
       setAgents(agents)
+      setPorts(ports)
       setLastSyncedAt(new Date())
       setIsLoading(false)
     })
 
     // Subscribe to updates
-    const unsubscribe = window.electronAPI.onAgentsUpdated((agents) => {
+    const unsubscribeAgents = window.electronAPI.onAgentsUpdated((agents) => {
       setAgents(agents)
       setLastSyncedAt(new Date())
     })
 
-    return unsubscribe
-  }, [setAgents, setLastSyncedAt, setIsLoading])
+    const unsubscribePorts = window.electronAPI.onPortsUpdated((ports) => {
+      setPorts(ports)
+    })
+
+    return () => {
+      unsubscribeAgents()
+      unsubscribePorts()
+    }
+  }, [setAgents, setPorts, setLastSyncedAt, setIsLoading])
 
   if (showSettings) {
     return (
@@ -36,8 +48,8 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header />
-      <AgentList />
+      <TabBar />
+      {activeTab === 'agents' ? <AgentList /> : <PortList />}
       <Footer />
     </div>
   )

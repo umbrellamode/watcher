@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen } from 'electron'
 import * as path from 'path'
 import { AgentMonitor } from './agent-monitor'
+import { PortMonitor } from './port-monitor'
 import { checkAndNotify, clearBadge } from './notifications'
 import { initSettings, getSettings, setSetting } from './settings'
 import type { Agent } from '../shared/types'
@@ -8,6 +9,7 @@ import type { Agent } from '../shared/types'
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let agentMonitor: AgentMonitor | null = null
+let portMonitor: PortMonitor | null = null
 let previousAgents: Map<string, Agent> = new Map()
 
 function createTrayIcon() {
@@ -171,6 +173,9 @@ app.whenReady().then(() => {
   agentMonitor = new AgentMonitor()
   agentMonitor.start()
 
+  portMonitor = new PortMonitor()
+  portMonitor.start()
+
   agentMonitor.on('agents-updated', (agents: Agent[]) => {
     mainWindow?.webContents.send('agents-updated', agents)
 
@@ -190,6 +195,10 @@ app.whenReady().then(() => {
     tray?.setToolTip(`AgentWatch - ${activeCount} active agent${activeCount !== 1 ? 's' : ''}`)
   })
 
+  portMonitor.on('ports-updated', (ports) => {
+    mainWindow?.webContents.send('ports-updated', ports)
+  })
+
   ipcMain.handle('get-agents', () => {
     return agentMonitor?.getAgents() || []
   })
@@ -197,6 +206,14 @@ app.whenReady().then(() => {
   ipcMain.handle('refresh-agents', async () => {
     await agentMonitor?.scan()
     return agentMonitor?.getAgents() || []
+  })
+
+  ipcMain.handle('ports:get', () => {
+    return portMonitor?.getPorts() || []
+  })
+
+  ipcMain.handle('ports:kill', async (_event, pid: number) => {
+    return portMonitor?.killProcess(pid) || false
   })
 
   ipcMain.handle('get-settings', () => {
@@ -219,10 +236,12 @@ app.on('window-all-closed', () => {
   // Don't quit on macOS when window is closed (tray app stays running)
   if (process.platform !== 'darwin') {
     agentMonitor?.stop()
+    portMonitor?.stop()
     app.quit()
   }
 })
 
 app.on('before-quit', () => {
   agentMonitor?.stop()
+  portMonitor?.stop()
 })

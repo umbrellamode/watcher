@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { Agent } from '../shared/types'
+import type { Agent, PortInfo } from '../shared/types'
 
 export interface AppSettings {
   launchAtLogin: boolean
@@ -15,6 +15,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('agents-updated', subscription)
     return () => ipcRenderer.removeListener('agents-updated', subscription)
   },
+  getPorts: (): Promise<PortInfo[]> => ipcRenderer.invoke('ports:get'),
+  killPort: (pid: number): Promise<boolean> => ipcRenderer.invoke('ports:kill', pid),
+  onPortsUpdated: (callback: (ports: PortInfo[]) => void) => {
+    const subscription = (_event: Electron.IpcRendererEvent, ports: PortInfo[]) => callback(ports)
+    ipcRenderer.on('ports-updated', subscription)
+    return () => ipcRenderer.removeListener('ports-updated', subscription)
+  },
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('get-settings'),
   setSetting: (key: string, value: unknown): Promise<void> => ipcRenderer.invoke('set-setting', key, value),
 })
@@ -25,6 +32,9 @@ declare global {
       getAgents: () => Promise<Agent[]>
       refreshAgents: () => Promise<Agent[]>
       onAgentsUpdated: (callback: (agents: Agent[]) => void) => () => void
+      getPorts: () => Promise<PortInfo[]>
+      killPort: (pid: number) => Promise<boolean>
+      onPortsUpdated: (callback: (ports: PortInfo[]) => void) => () => void
       getSettings: () => Promise<AppSettings>
       setSetting: (key: string, value: unknown) => Promise<void>
     }
