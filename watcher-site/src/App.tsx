@@ -1,9 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const INSTALL_COMMAND = 'curl -fsSL https://watcher.umbrellamode.com/install.sh | bash'
 
 function App() {
   const [copied, setCopied] = useState(false)
+  const [installCount, setInstallCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => setInstallCount(data.installs))
+      .catch(() => setInstallCount(null))
+  }, [])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(INSTALL_COMMAND)
@@ -17,13 +25,18 @@ function App() {
       <header className="header">
         <div className="header-title">/watcher</div>
         <div className="header-subtitle">Monitor your AI coding agents</div>
+        {installCount !== null && (
+          <div className="install-count">{installCount.toLocaleString()} installs</div>
+        )}
       </header>
 
       {/* Hero Screenshot */}
       <section className="hero">
-        <div className="hero-placeholder">
-          [App preview]
-        </div>
+        <img
+          src="/preview.png"
+          alt="Watcher app showing active Claude sessions"
+          className="hero-image"
+        />
       </section>
 
       {/* Installation */}

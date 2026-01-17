@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { redis, INSTALL_COUNT_KEY } from './lib/redis'
 
 const installScript = String.raw`#!/bin/bash
 set -e
@@ -97,7 +98,12 @@ if [[ ! $REPLY =~ ^[Nn]$ ]]; then
 fi
 `
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Track install (fire and forget - don't block response)
+  redis.incr(INSTALL_COUNT_KEY).catch(err => {
+    console.error('Failed to increment install count:', err)
+  })
+
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
   res.setHeader('Content-Disposition', 'inline; filename="install.sh"')
   res.status(200).send(installScript)

@@ -70,7 +70,7 @@ describe('Install Script API', () => {
 
   describe('API Handler Structure', () => {
     it('should export a default handler function', () => {
-      expect(apiFileContent).toContain('export default function handler')
+      expect(apiFileContent).toContain('export default async function handler')
     })
 
     it('should set Content-Type header', () => {
