@@ -23,6 +23,8 @@ macOS only. Requires [Claude Code](https://claude.ai/code).
 
 Watcher monitors Claude Code sessions running on your machine and displays their status in your menu bar. When Claude requests permissions, you'll get a notification so you can respond quickly.
 
+![Watcher Preview](watcher-site/public/preview.png)
+
 ## Inspiration
 
 Inspired by [@mattprd's tweet](https://x.com/mattprd/status/2012424118595907594).
