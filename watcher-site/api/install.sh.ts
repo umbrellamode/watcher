@@ -3,11 +3,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 const installScript = String.raw`#!/bin/bash
 set -e
 
-# AgentWatch Installer
+# Watcher Installer
 # Usage: curl -fsSL https://watcher.umbrellamode.com/install.sh | bash
 
-REPO="umbrellamode/agentwatch"
-APP_NAME="AgentWatch"
+REPO="umbrellamode/watcher"
+APP_NAME="Watcher"
 INSTALL_DIR="/Applications"
 
 # Colors

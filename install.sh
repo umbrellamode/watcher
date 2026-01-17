@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-# AgentWatch Installer
-# Usage: curl -fsSL https://wcp.dev/watcher/install.sh | bash
+# Watcher Installer
+# Usage: curl -fsSL https://watcher.umbrellamode.com/install.sh | bash
 
-REPO="umbrellamode/agentwatch"
-APP_NAME="AgentWatch"
+REPO="umbrellamode/watcher"
+APP_NAME="Watcher"
 INSTALL_DIR="/Applications"
 
 # Colors
