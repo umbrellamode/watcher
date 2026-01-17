@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 
 const INSTALL_COMMAND = 'curl -fsSL https://watcher.umbrellamode.com/install.sh | bash'
 
@@ -78,6 +79,7 @@ function App() {
           GitHub
         </a>
       </footer>
+      <Analytics />
     </div>
   )
 }
