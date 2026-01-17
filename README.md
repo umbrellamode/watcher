@@ -11,8 +11,8 @@ Monitor your AI coding agents from the menu bar.
 ## Getting Started
 
 ```bash
-git pull
-cd agentstatus
+git clone https://github.com/umbrellamode/watcher
+cd watcher
 pnpm install
 pnpm dev
 ```
