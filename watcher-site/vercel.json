@@ -1,4 +1,7 @@
 {
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/install.sh",

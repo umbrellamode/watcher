@@ -30,15 +30,6 @@ function App() {
         )}
       </header>
 
-      {/* Hero Screenshot */}
-      <section className="hero">
-        <img
-          src="/preview.png"
-          alt="Watcher app showing active Claude sessions"
-          className="hero-image"
-        />
-      </section>
-
       {/* Installation */}
       <section className="section">
         <div className="section-label">Installation</div>
@@ -55,6 +46,15 @@ function App() {
           </button>
         </div>
         <p className="section-note">macOS only. Requires Claude Code.</p>
+      </section>
+
+      {/* Hero Screenshot */}
+      <section className="hero">
+        <img
+          src="/preview.png"
+          alt="Watcher app showing active Claude sessions"
+          className="hero-image"
+        />
       </section>
 
       {/* Features */}
