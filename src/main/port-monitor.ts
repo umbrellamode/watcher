@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { PortInfo } from '../shared/types'
+import { getPortWhitelist } from './settings'
 
 const execAsync = promisify(exec)
 
@@ -57,17 +58,26 @@ export class PortMonitor extends EventEmitter {
         }
       }
 
+      // Filter ports by whitelist
+      const whitelist = getPortWhitelist()
+      const filteredPorts = new Map<number, PortInfo>()
+      for (const [port, info] of newPorts) {
+        if (whitelist.length === 0 || whitelist.includes(port)) {
+          filteredPorts.set(port, info)
+        }
+      }
+
       // Check if ports changed
       const changed =
-        newPorts.size !== this.ports.size ||
-        Array.from(newPorts.keys()).some(
+        filteredPorts.size !== this.ports.size ||
+        Array.from(filteredPorts.keys()).some(
           (port) =>
             !this.ports.has(port) ||
-            this.ports.get(port)!.pid !== newPorts.get(port)!.pid
+            this.ports.get(port)!.pid !== filteredPorts.get(port)!.pid
         )
 
       if (changed) {
-        this.ports = newPorts
+        this.ports = filteredPorts
         this.emit('ports-updated', this.getPorts())
       }
     } catch (error) {

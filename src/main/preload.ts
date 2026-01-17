@@ -1,15 +1,20 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Agent, PortInfo } from '../shared/types'
 
+export type WindowMode = 'menubar' | 'standalone'
+
 export interface AppSettings {
   launchAtLogin: boolean
   notificationSound: boolean
   scanInterval: number
+  portWhitelist: number[]
+  windowMode: WindowMode
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getAgents: (): Promise<Agent[]> => ipcRenderer.invoke('get-agents'),
   refreshAgents: (): Promise<Agent[]> => ipcRenderer.invoke('refresh-agents'),
+  killAgent: (agentId: string): Promise<boolean> => ipcRenderer.invoke('agents:kill', agentId),
   onAgentsUpdated: (callback: (agents: Agent[]) => void) => {
     const subscription = (_event: Electron.IpcRendererEvent, agents: Agent[]) => callback(agents)
     ipcRenderer.on('agents-updated', subscription)
@@ -31,6 +36,7 @@ declare global {
     electronAPI: {
       getAgents: () => Promise<Agent[]>
       refreshAgents: () => Promise<Agent[]>
+      killAgent: (agentId: string) => Promise<boolean>
       onAgentsUpdated: (callback: (agents: Agent[]) => void) => () => void
       getPorts: () => Promise<PortInfo[]>
       killPort: (pid: number) => Promise<boolean>

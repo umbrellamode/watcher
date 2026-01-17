@@ -12,6 +12,7 @@ export class AgentMonitor extends EventEmitter {
   private agents: Map<string, Agent> = new Map()
   private scanInterval: NodeJS.Timeout | null = null
   private claudeProjectsDir: string
+  private claudePidMap: Map<string, number> = new Map() // workingDir -> pid
 
   constructor() {
     super()
@@ -58,6 +59,9 @@ export class AgentMonitor extends EventEmitter {
         }
       }
     }
+
+    // Update Claude PID map before scanning sessions
+    this.claudePidMap = await this.getClaudeProcesses()
 
     await Promise.all([
       this.scanClaudeSessions(),
@@ -111,7 +115,26 @@ export class AgentMonitor extends EventEmitter {
       let status: AgentStatus = 'running'
       let lastActivity = 'Active session'
       let waitingForPermission = false
+      let isSubagent = false
       const activities: ActivityItem[] = []
+
+      // Check if this is a subagent by looking at the first few entries
+      const firstLines = lines.slice(0, 10)
+      for (const line of firstLines) {
+        try {
+          const entry: ClaudeLogEntry = JSON.parse(line)
+          // Check for subagent_type in the session initialization or parent_session_id
+          if (entry.type === 'init' || entry.type === 'system') {
+            const content = JSON.stringify(entry)
+            if (content.includes('subagent') || content.includes('parent_session')) {
+              isSubagent = true
+              break
+            }
+          }
+        } catch {
+          // Skip invalid JSON
+        }
+      }
 
       // Parse entries to determine status and activities
       const recentLines = lines.slice(-50) // Look at more lines for activity history
@@ -183,6 +206,9 @@ export class AgentMonitor extends EventEmitter {
       // Limit activities to 10 most recent
       const limitedActivities = activities.slice(0, 10)
 
+      // Try to find PID for this session
+      const pid = this.claudePidMap.get(workingDir)
+
       const existingAgent = this.agents.get(agentId)
       const agent: Agent = {
         id: agentId,
@@ -198,6 +224,8 @@ export class AgentMonitor extends EventEmitter {
         progress: null,
         sessionId,
         waitingForPermission,
+        pid,
+        isSubagent,
       }
 
       this.agents.set(agentId, agent)
@@ -383,6 +411,64 @@ export class AgentMonitor extends EventEmitter {
       })
     } catch (error) {
       console.error('Error watching Claude projects directory:', error)
+    }
+  }
+
+  // Get Claude Code processes and their working directories
+  private async getClaudeProcesses(): Promise<Map<string, number>> {
+    const pidMap = new Map<string, number>()
+    try {
+      // Use lsof to find claude processes and their cwd
+      // -c claude matches processes with "claude" in the name
+      // -d cwd shows only the current working directory file descriptor
+      const { stdout } = await execAsync('lsof -c claude -d cwd -Fn 2>/dev/null || true', {
+        timeout: 5000,
+      })
+
+      const lines = stdout.split('\n')
+      let currentPid: number | null = null
+
+      for (const line of lines) {
+        if (line.startsWith('p')) {
+          // Process ID line
+          currentPid = parseInt(line.slice(1), 10)
+        } else if (line.startsWith('n') && currentPid) {
+          // Name (path) line - this is the working directory
+          const workingDir = line.slice(1)
+          if (workingDir && !pidMap.has(workingDir)) {
+            pidMap.set(workingDir, currentPid)
+          }
+        }
+      }
+    } catch (error) {
+      // lsof may fail if no claude processes are running
+      console.debug('No Claude processes found or lsof failed:', error)
+    }
+    return pidMap
+  }
+
+  // Kill an agent by its ID
+  async killAgent(agentId: string): Promise<boolean> {
+    const agent = this.agents.get(agentId)
+    if (!agent) {
+      console.error('Agent not found:', agentId)
+      return false
+    }
+
+    const pid = agent.pid
+    if (!pid) {
+      console.error('No PID for agent:', agentId)
+      return false
+    }
+
+    try {
+      process.kill(pid, 'SIGTERM')
+      // Give it a moment, then rescan
+      setTimeout(() => this.scan(), 500)
+      return true
+    } catch (error) {
+      console.error('Failed to kill agent:', error)
+      return false
     }
   }
 }

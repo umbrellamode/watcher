@@ -3,16 +3,22 @@ import { app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 
+export type WindowMode = 'menubar' | 'standalone'
+
 export interface AppSettings {
   launchAtLogin: boolean
   notificationSound: boolean
   scanInterval: number // in milliseconds
+  portWhitelist: number[] // ports to show in Ports tab (default: [3000, 4000])
+  windowMode: WindowMode // 'menubar' for tray app, 'standalone' for normal window
 }
 
 const defaults: AppSettings = {
   launchAtLogin: true,
   notificationSound: true,
   scanInterval: 3000,
+  portWhitelist: [3000, 4000],
+  windowMode: 'menubar',
 }
 
 // Simple file-based settings store (electron-store has ESM issues)
@@ -89,4 +95,12 @@ export function getScanInterval(): number {
 
 export function shouldPlaySound(): boolean {
   return currentSettings.notificationSound
+}
+
+export function getPortWhitelist(): number[] {
+  return currentSettings.portWhitelist
+}
+
+export function getWindowMode(): WindowMode {
+  return currentSettings.windowMode
 }

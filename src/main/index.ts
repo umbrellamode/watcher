@@ -3,7 +3,7 @@ import * as path from 'path'
 import { AgentMonitor } from './agent-monitor'
 import { PortMonitor } from './port-monitor'
 import { checkAndNotify, clearBadge } from './notifications'
-import { initSettings, getSettings, setSetting } from './settings'
+import { initSettings, getSettings, setSetting, getWindowMode } from './settings'
 import type { Agent } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
@@ -41,26 +41,28 @@ function updateTrayBadge(count: number) {
 
 function createWindow() {
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize
+  const isStandalone = getWindowMode() === 'standalone'
 
   mainWindow = new BrowserWindow({
-    width: 360,
-    height: 500,
+    width: isStandalone ? 400 : 360,
+    height: isStandalone ? 600 : 500,
     minWidth: 320,
     minHeight: 300,
-    maxWidth: 400,
-    maxHeight: 600,
-    x: screenWidth - 380,
-    y: 0,
-    frame: false,
-    transparent: true,
-    vibrancy: 'menu',
-    visualEffectState: 'active',
-    backgroundColor: '#00000000',
-    show: false,
-    skipTaskbar: true,
+    maxWidth: isStandalone ? 800 : 400,
+    maxHeight: isStandalone ? 900 : 600,
+    x: isStandalone ? undefined : screenWidth - 380,
+    y: isStandalone ? undefined : 0,
+    frame: isStandalone, // Show frame in standalone mode
+    transparent: !isStandalone, // Only transparent in menubar mode
+    vibrancy: isStandalone ? undefined : 'menu',
+    visualEffectState: isStandalone ? undefined : 'active',
+    backgroundColor: isStandalone ? '#1a1a1a' : '#00000000',
+    show: isStandalone, // Show immediately in standalone mode
+    skipTaskbar: !isStandalone, // Show in taskbar for standalone
     resizable: true,
     alwaysOnTop: false,
     roundedCorners: true,
+    titleBarStyle: isStandalone ? 'hiddenInset' : undefined, // macOS style title bar
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -75,8 +77,9 @@ function createWindow() {
   }
 
   mainWindow.on('blur', () => {
-    // Hide window when it loses focus (clicking outside)
-    if (mainWindow && !mainWindow.webContents.isDevToolsOpened()) {
+    // Only hide window on blur in menubar mode
+    const isStandalone = getWindowMode() === 'standalone'
+    if (!isStandalone && mainWindow && !mainWindow.webContents.isDevToolsOpened()) {
       mainWindow.hide()
     }
   })
@@ -162,12 +165,22 @@ app.whenReady().then(() => {
   // Initialize settings (including auto-launch)
   initSettings()
 
-  // Hide dock icon on macOS (menu bar app style)
+  const isStandalone = getWindowMode() === 'standalone'
+
+  // Handle dock visibility based on window mode
   if (process.platform === 'darwin') {
-    app.dock?.hide()
+    if (isStandalone) {
+      app.dock?.show()
+    } else {
+      app.dock?.hide()
+    }
   }
 
-  createTray()
+  // Only create tray in menubar mode
+  if (!isStandalone) {
+    createTray()
+  }
+
   createWindow()
 
   agentMonitor = new AgentMonitor()
@@ -214,6 +227,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('ports:kill', async (_event, pid: number) => {
     return portMonitor?.killProcess(pid) || false
+  })
+
+  ipcMain.handle('agents:kill', async (_event, agentId: string) => {
+    return agentMonitor?.killAgent(agentId) || false
   })
 
   ipcMain.handle('get-settings', () => {

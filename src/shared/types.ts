@@ -25,6 +25,7 @@ export interface Agent {
   pid?: number
   sessionId?: string
   waitingForPermission?: boolean
+  isSubagent?: boolean
 }
 
 export interface AgentState {

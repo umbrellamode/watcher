@@ -14,7 +14,8 @@ import {
   CheckIcon,
   ReloadIcon,
   ExclamationTriangleIcon,
-  CrossCircledIcon
+  CrossCircledIcon,
+  Cross2Icon
 } from '@radix-ui/react-icons'
 import type { Agent, AgentType, AgentStatus, ActivityItem } from '../../shared/types'
 import { cn } from '../lib/utils'
@@ -60,6 +61,11 @@ export function AgentCard({ agent }: AgentCardProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
+            {agent.isSubagent && (
+              <span className="px-1.5 py-0.5 text-[9px] font-medium uppercase rounded bg-[--color-accent]/20 text-[--color-accent] shrink-0">
+                Sub
+              </span>
+            )}
             <span className="text-[--color-text-primary] truncate">
               {projectDisplay}
             </span>
@@ -71,6 +77,20 @@ export function AgentCard({ agent }: AgentCardProps) {
             {agent.currentActivity || getStatusText(agent.status)}
           </div>
         </div>
+
+        {/* Kill button - only show if agent has PID */}
+        {agent.pid && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              window.electronAPI.killAgent(agent.id)
+            }}
+            className="p-1 rounded hover:bg-[--color-bg-card] text-[--color-text-muted] hover:text-[--color-error] transition-colors shrink-0"
+            title="Kill session"
+          >
+            <Cross2Icon className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         {/* Expand indicator */}
         <ChevronRightIcon

@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Cross2Icon } from '@radix-ui/react-icons'
 
+type WindowMode = 'menubar' | 'standalone'
+
 interface AppSettings {
   launchAtLogin: boolean
   notificationSound: boolean
   scanInterval: number
+  portWhitelist: number[]
+  windowMode: WindowMode
 }
 
 interface SettingsProps {
@@ -29,6 +33,22 @@ export function Settings({ onClose }: SettingsProps) {
     if (!settings) return
     await window.electronAPI.setSetting('scanInterval', interval)
     setSettings({ ...settings, scanInterval: interval })
+  }
+
+  const handlePortWhitelistChange = async (value: string) => {
+    if (!settings) return
+    const ports = value
+      .split(',')
+      .map(s => parseInt(s.trim(), 10))
+      .filter(n => !isNaN(n) && n > 0 && n <= 65535)
+    await window.electronAPI.setSetting('portWhitelist', ports)
+    setSettings({ ...settings, portWhitelist: ports })
+  }
+
+  const handleWindowModeChange = async (mode: WindowMode) => {
+    if (!settings) return
+    await window.electronAPI.setSetting('windowMode', mode)
+    setSettings({ ...settings, windowMode: mode })
   }
 
   if (!settings) return null
@@ -67,6 +87,39 @@ export function Settings({ onClose }: SettingsProps) {
             <option value={5000}>5s</option>
             <option value={10000}>10s</option>
           </select>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[--color-text-secondary]">port whitelist</span>
+          </div>
+          <input
+            type="text"
+            defaultValue={settings.portWhitelist.join(', ')}
+            onBlur={(e) => handlePortWhitelistChange(e.target.value)}
+            placeholder="3000, 4000"
+            className="w-full text-[11px] bg-[--color-bg-card] border-none rounded px-2 py-1.5 text-[--color-text-primary] outline-none placeholder:text-[--color-text-muted]"
+          />
+          <p className="text-[10px] text-[--color-text-muted]">
+            comma-separated ports to show (empty = all)
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[--color-text-secondary]">window mode</span>
+            <select
+              value={settings.windowMode}
+              onChange={(e) => handleWindowModeChange(e.target.value as WindowMode)}
+              className="text-[11px] bg-[--color-bg-card] border-none rounded px-2 py-1 text-[--color-text-primary] outline-none"
+            >
+              <option value="menubar">menubar</option>
+              <option value="standalone">standalone</option>
+            </select>
+          </div>
+          <p className="text-[10px] text-[--color-text-muted]">
+            restart app to apply
+          </p>
         </div>
       </div>
 
